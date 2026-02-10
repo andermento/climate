@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # Banco de dados PostgreSQL
+  postgres:
+    image: postgres:15
+    container_name: climate_postgres
+    environment:
+      POSTGRES_USER: climate
+      POSTGRES_PASSWORD: climate_password
+      POSTGRES_DB: climate_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U climate"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - climate_network
+
+  # Interface para gerenciar PostgreSQL (opcional, mas util)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: climate_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@climate.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - climate_network
+
+volumes:
+  postgres_data:
+
+networks:
+  climate_network:
+    driver: bridge

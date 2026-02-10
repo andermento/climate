@@ -1,0 +1,51 @@
+# Ambiente Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Dados (muito grandes para Git)
+data/raw/*.csv
+data/processed/
+*.parquet
+
+# Ambiente
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Docker
+postgres_data/
+
+# Logs
+*.log
+logs/
+airflow_logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node.js (frontend)
+climate-web/node_modules/
+climate-web/.next/
+climate-web/out/
+climate-web/.env.local
+
+# Git
+climate-web/.git/
+
+# Arquivos de configuração local
+CLAUDE.md
+AGENTS.md

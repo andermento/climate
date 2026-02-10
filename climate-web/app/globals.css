@@ -1,0 +1,186 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a2e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a3a5a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a4a6a;
+}
+
+/* Base styles */
+@layer base {
+  :root {
+    --background: 240 20% 13%;
+    --foreground: 0 0% 88%;
+    --card: 225 35% 16%;
+    --card-foreground: 0 0% 88%;
+    --primary: 160 50% 54%;
+    --primary-foreground: 0 0% 10%;
+    --secondary: 225 25% 25%;
+    --secondary-foreground: 0 0% 88%;
+    --muted: 225 25% 25%;
+    --muted-foreground: 0 0% 63%;
+    --accent: 160 50% 54%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 225 30% 25%;
+    --input: 225 30% 25%;
+    --ring: 160 50% 54%;
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-text antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Component styles */
+@layer components {
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-md border border-border rounded-lg shadow-card;
+  }
+
+  .glass-card-hover {
+    @apply glass-card hover:bg-card-hover hover:shadow-card-hover transition-all duration-200;
+  }
+
+  .temp-gradient {
+    background: linear-gradient(
+      to right,
+      #4ecdc4 0%,
+      #74c0fc 25%,
+      #ffd43b 50%,
+      #ffa94d 75%,
+      #ff6b6b 100%
+    );
+  }
+
+  .btn-primary {
+    @apply bg-accent hover:bg-accent-hover text-background font-medium px-4 py-2 rounded-lg transition-colors;
+  }
+
+  .btn-secondary {
+    @apply bg-card hover:bg-card-hover text-text border border-border px-4 py-2 rounded-lg transition-colors;
+  }
+
+  .input-field {
+    @apply bg-card border border-border rounded-lg px-3 py-2 text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all;
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 px-4 py-3 text-text-muted hover:text-text hover:bg-card rounded-lg transition-colors cursor-pointer;
+  }
+
+  .sidebar-item-active {
+    @apply sidebar-item text-accent bg-card;
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-accent to-temp-cool;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Map popup styles */
+.mapboxgl-popup-content {
+  background: #16213e !important;
+  color: #e0e0e0 !important;
+  border-radius: 8px !important;
+  padding: 12px 16px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid #2a3a5a !important;
+}
+
+.mapboxgl-popup-tip {
+  border-top-color: #16213e !important;
+}
+
+.mapboxgl-popup-close-button {
+  color: #a0a0a0 !important;
+  font-size: 18px !important;
+  padding: 4px 8px !important;
+}
+
+.mapboxgl-popup-close-button:hover {
+  color: #e0e0e0 !important;
+  background: transparent !important;
+}
+
+/* Recharts custom styles */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: #2a3a5a !important;
+}
+
+.recharts-text {
+  fill: #a0a0a0 !important;
+}
+
+.recharts-tooltip-wrapper {
+  outline: none !important;
+}
+
+/* Loading skeleton */
+.skeleton {
+  @apply animate-pulse bg-card rounded;
+}
+
+/* Temperature badge */
+.temp-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.temp-badge-hot {
+  @apply temp-badge bg-temp-hot/20 text-temp-hot;
+}
+
+.temp-badge-warm {
+  @apply temp-badge bg-temp-warm/20 text-temp-warm;
+}
+
+.temp-badge-neutral {
+  @apply temp-badge bg-temp-neutral/20 text-temp-neutral;
+}
+
+.temp-badge-cool {
+  @apply temp-badge bg-temp-cool/20 text-temp-cool;
+}
+
+.temp-badge-cold {
+  @apply temp-badge bg-temp-cold/20 text-temp-cold;
+}
