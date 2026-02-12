@@ -1,23 +1,15 @@
 'use client';
 
 import React from 'react';
-import { Thermometer, Search, Menu, Moon, Sun, Github } from 'lucide-react';
+import { Thermometer, Menu, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
 interface HeaderProps {
   onMenuClick?: () => void;
-  onSearch?: (query: string) => void;
 }
 
-export function Header({ onMenuClick, onSearch }: HeaderProps) {
-  const [searchQuery, setSearchQuery] = React.useState('');
+export function Header({ onMenuClick }: HeaderProps) {
   const [isDark, setIsDark] = React.useState(true);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch?.(searchQuery);
-  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
@@ -44,33 +36,8 @@ export function Header({ onMenuClick, onSearch }: HeaderProps) {
           </div>
         </div>
 
-        {/* Center: Search */}
-        <form onSubmit={handleSearch} className="flex-1 max-w-md mx-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
-            <Input
-              type="text"
-              placeholder="Search city..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-card/50"
-            />
-          </div>
-        </form>
-
-        {/* Right: Actions */}
+        {/* Right: Theme Toggle */}
         <div className="flex items-center gap-2">
-          {/* Quick Filters */}
-          <div className="hidden md:flex items-center gap-2 mr-2">
-            <Button variant="ghost" size="sm" className="text-text-muted hover:text-text">
-              Global
-            </Button>
-            <Button variant="ghost" size="sm" className="text-text-muted hover:text-text">
-              Decades
-            </Button>
-          </div>
-
-          {/* Theme Toggle */}
           <Button
             variant="ghost"
             size="icon"
@@ -82,18 +49,6 @@ export function Header({ onMenuClick, onSearch }: HeaderProps) {
             ) : (
               <Moon className="h-5 w-5 text-text-muted" />
             )}
-          </Button>
-
-          {/* GitHub Link */}
-          <Button variant="ghost" size="icon" asChild>
-            <a
-              href="https://github.com/andersonxn/climate-etl-pipeline"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="View on GitHub"
-            >
-              <Github className="h-5 w-5 text-text-muted" />
-            </a>
           </Button>
         </div>
       </div>

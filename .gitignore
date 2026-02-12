@@ -5,8 +5,6 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
-.coverage
-htmlcov/
 
 # Dados (muito grandes para Git)
 data/raw/*.csv

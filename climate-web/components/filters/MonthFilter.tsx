@@ -3,20 +3,13 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { MONTH_NAMES, SEASONS, type MonthFilter as MonthFilterType } from '@/lib/types';
+import { MONTH_NAMES, type MonthFilter as MonthFilterType } from '@/lib/types';
 
 interface MonthFilterProps {
   value: MonthFilterType;
   onChange: (value: MonthFilterType) => void;
   className?: string;
 }
-
-const SEASON_CONFIG = [
-  { key: 'spring' as const, label: 'Spring', emoji: '🌸', months: SEASONS.spring },
-  { key: 'summer' as const, label: 'Summer', emoji: '☀️', months: SEASONS.summer },
-  { key: 'fall' as const, label: 'Fall', emoji: '🍂', months: SEASONS.fall },
-  { key: 'winter' as const, label: 'Winter', emoji: '❄️', months: SEASONS.winter },
-];
 
 export function MonthFilter({ value, onChange, className }: MonthFilterProps) {
   const selectedMonths = React.useMemo(() => {
@@ -25,9 +18,6 @@ export function MonthFilter({ value, onChange, className }: MonthFilterProps) {
     }
     if (value.type === 'multiple' && value.multiple) {
       return value.multiple;
-    }
-    if (value.type === 'season' && value.season) {
-      return [...SEASONS[value.season]];
     }
     return [];
   }, [value]);
@@ -52,17 +42,6 @@ export function MonthFilter({ value, onChange, className }: MonthFilterProps) {
     }
   };
 
-  const handleSeasonSelect = (season: keyof typeof SEASONS) => {
-    const isCurrentSeason = value.type === 'season' && value.season === season;
-
-    if (isCurrentSeason) {
-      // Deselect - select all months
-      onChange({ type: 'multiple', multiple: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] });
-    } else {
-      onChange({ type: 'season', season });
-    }
-  };
-
   const handleSelectAll = () => {
     onChange({ type: 'multiple', multiple: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] });
   };
@@ -71,25 +50,6 @@ export function MonthFilter({ value, onChange, className }: MonthFilterProps) {
 
   return (
     <div className={cn('space-y-4', className)}>
-      {/* Season Quick Select */}
-      <div className="grid grid-cols-2 gap-2">
-        {SEASON_CONFIG.map((season) => {
-          const isActive = value.type === 'season' && value.season === season.key;
-          return (
-            <Button
-              key={season.key}
-              variant={isActive ? 'default' : 'secondary'}
-              size="sm"
-              onClick={() => handleSeasonSelect(season.key)}
-              className="text-xs"
-            >
-              <span className="mr-1">{season.emoji}</span>
-              {season.label}
-            </Button>
-          );
-        })}
-      </div>
-
       {/* All Months Button */}
       <Button
         variant={isAllSelected ? 'default' : 'secondary'}
@@ -128,8 +88,6 @@ export function MonthFilter({ value, onChange, className }: MonthFilterProps) {
       <div className="text-center text-sm text-text-muted">
         {isAllSelected ? (
           'All months'
-        ) : value.type === 'season' && value.season ? (
-          `${SEASON_CONFIG.find((s) => s.key === value.season)?.label} (${selectedMonths.length} months)`
         ) : (
           `${selectedMonths.length} month${selectedMonths.length !== 1 ? 's' : ''} selected`
         )}

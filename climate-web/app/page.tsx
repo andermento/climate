@@ -1,17 +1,29 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Database, Globe, Thermometer, MapPin, TrendingUp } from 'lucide-react';
+import { Database, Globe, MapPin, Search, Navigation, AlertCircle } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { FilterPanel, DEFAULT_FILTERS } from '@/components/filters/FilterPanel';
 import { MetricsCard } from '@/components/cards/MetricsCard';
-import { ClimateMap } from '@/components/map/ClimateMap';
+import { WeatherCard } from '@/components/cards/WeatherCard';
+import { ForecastCard } from '@/components/cards/ForecastCard';
+import { HistoricalComparison } from '@/components/cards/HistoricalComparison';
+import { CountryMap } from '@/components/map/CountryMap';
 import { TemperatureChart } from '@/components/charts/TemperatureChart';
 import { DecadeChart } from '@/components/charts/DecadeChart';
 import { useFilters } from '@/hooks/useFilters';
+import { useGeolocation } from '@/hooks/useGeolocation';
 import { parseYearFilter, parseMonthFilter, formatNumber } from '@/lib/utils';
-import type { CityData, DecadeData, GlobalStats, MapMarker } from '@/lib/types';
+import type {
+  DecadeData,
+  GlobalStats,
+  MapMarker,
+  CurrentWeather,
+  ForecastDay,
+  HistoricalData,
+  ExtremesData,
+} from '@/lib/types';
 
 export default function HomePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -22,14 +34,93 @@ export default function HomePage() {
   const [temperatureData, setTemperatureData] = useState<{ year: number; temperature: number; uncertainty?: number }[]>([]);
   const [mapMarkers, setMapMarkers] = useState<MapMarker[]>([]);
 
+  // Weather state
+  const [currentWeather, setCurrentWeather] = useState<CurrentWeather | null>(null);
+  const [forecast, setForecast] = useState<ForecastDay[] | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(true);
+
+  // Historical state
+  const [historicalData, setHistoricalData] = useState<HistoricalData | null>(null);
+  const [extremesData, setExtremesData] = useState<ExtremesData | null>(null);
+  const [historicalLoading, setHistoricalLoading] = useState(false);
+
   const { filters, setFilters, getFilterSummary } = useFilters();
+  const geolocation = useGeolocation();
+
+  // Get selected country (single selection for weather/map)
+  const selectedCountry = filters.country.countries.length === 1
+    ? filters.country.countries[0]
+    : null;
+
+  // Fetch weather data based on geolocation or selected country
+  const fetchWeatherData = useCallback(async (lat?: number, lon?: number, country?: string) => {
+    setWeatherLoading(true);
+    try {
+      let currentUrl: string;
+      let forecastUrl: string;
+
+      if (lat !== undefined && lon !== undefined) {
+        currentUrl = `/api/weather/current?lat=${lat}&lon=${lon}`;
+        forecastUrl = `/api/weather/forecast?lat=${lat}&lon=${lon}`;
+      } else if (country) {
+        currentUrl = `/api/weather/current?country=${encodeURIComponent(country)}`;
+        forecastUrl = `/api/weather/forecast?country=${encodeURIComponent(country)}`;
+      } else {
+        setWeatherLoading(false);
+        return;
+      }
+
+      const [currentRes, forecastRes] = await Promise.all([
+        fetch(currentUrl),
+        fetch(forecastUrl),
+      ]);
+
+      if (currentRes.ok) {
+        const currentData = await currentRes.json();
+        setCurrentWeather(currentData);
+      }
+
+      if (forecastRes.ok) {
+        const forecastData = await forecastRes.json();
+        setForecast(forecastData.forecast);
+      }
+    } catch (error) {
+      console.error('Error fetching weather data:', error);
+    } finally {
+      setWeatherLoading(false);
+    }
+  }, []);
+
+  // Fetch historical data for selected country
+  const fetchHistoricalData = useCallback(async (country: string) => {
+    setHistoricalLoading(true);
+    try {
+      const [historicalRes, extremesRes] = await Promise.all([
+        fetch(`/api/temperatures/historical?country=${encodeURIComponent(country)}`),
+        fetch(`/api/temperatures/extremes?country=${encodeURIComponent(country)}`),
+      ]);
+
+      if (historicalRes.ok) {
+        const data = await historicalRes.json();
+        setHistoricalData(data);
+      }
+
+      if (extremesRes.ok) {
+        const data = await extremesRes.json();
+        setExtremesData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching historical data:', error);
+    } finally {
+      setHistoricalLoading(false);
+    }
+  }, []);
 
   // Fetch initial data
   useEffect(() => {
     async function fetchInitialData() {
       setIsLoading(true);
       try {
-        // Fetch countries and global stats in parallel
         const [countriesRes, globalRes] = await Promise.all([
           fetch('/api/countries'),
           fetch('/api/global'),
@@ -42,7 +133,6 @@ export default function HomePage() {
         setGlobalStats(globalData.stats);
         setDecadeData(globalData.decades || []);
 
-        // Transform decade data for temperature chart
         const chartData = (globalData.decades || []).map((d: DecadeData) => ({
           year: d.decade,
           temperature: d.avg_temp,
@@ -57,6 +147,25 @@ export default function HomePage() {
 
     fetchInitialData();
   }, []);
+
+  // Fetch weather based on geolocation (initial load)
+  useEffect(() => {
+    if (!geolocation.loading && geolocation.coordinates && !selectedCountry) {
+      fetchWeatherData(geolocation.coordinates.lat, geolocation.coordinates.lon);
+    }
+  }, [geolocation.loading, geolocation.coordinates, selectedCountry, fetchWeatherData]);
+
+  // Fetch weather when country is selected
+  useEffect(() => {
+    if (selectedCountry) {
+      fetchWeatherData(undefined, undefined, selectedCountry);
+      fetchHistoricalData(selectedCountry);
+    } else {
+      // Clear historical data when no country selected
+      setHistoricalData(null);
+      setExtremesData(null);
+    }
+  }, [selectedCountry, fetchWeatherData, fetchHistoricalData]);
 
   // Fetch temperature data when filters change
   useEffect(() => {
@@ -73,29 +182,39 @@ export default function HomePage() {
         params.set('months', months.join(','));
       }
 
-      if (filters.country.countries.length === 1) {
-        params.set('country', filters.country.countries[0]);
-      }
-
-      if (filters.city.selected) {
-        params.set('city', filters.city.selected.city);
+      if (selectedCountry) {
+        params.set('country', selectedCountry);
       }
 
       try {
         const res = await fetch(`/api/temperatures?${params}`);
         const data = await res.json();
 
-        // Create map markers from temperature data
         if (data.data) {
+          interface TemperatureRecord {
+            avg_temperature: number;
+            dim_location: {
+              city: string | null;
+              country: string | null;
+              latitude: number | null;
+              longitude: number | null;
+              granularity: string;
+            };
+          }
+
           const markers: MapMarker[] = data.data
-            .filter((d: { latitude: number | null; longitude: number | null }) => d.latitude && d.longitude)
+            .filter((d: TemperatureRecord) =>
+              d.dim_location?.latitude &&
+              d.dim_location?.longitude &&
+              d.dim_location?.granularity === 'city'
+            )
             .slice(0, 500)
-            .map((d: { city: string; country: string; latitude: number; longitude: number; avg_temperature: number }, i: number) => ({
+            .map((d: TemperatureRecord, i: number) => ({
               id: `marker-${i}`,
-              city: d.city || 'Unknown',
-              country: d.country || 'Unknown',
-              latitude: d.latitude,
-              longitude: d.longitude,
+              city: d.dim_location?.city || 'Unknown',
+              country: d.dim_location?.country || 'Unknown',
+              latitude: d.dim_location.latitude!,
+              longitude: d.dim_location.longitude!,
               temperature: d.avg_temperature,
             }));
           setMapMarkers(markers);
@@ -106,38 +225,15 @@ export default function HomePage() {
     }
 
     fetchFilteredData();
-  }, [filters]);
+  }, [filters, selectedCountry]);
 
-  // City search handler
-  const handleCitySearch = useCallback(async (query: string): Promise<CityData[]> => {
-    try {
-      const res = await fetch(`/api/cities/search?q=${encodeURIComponent(query)}`);
-      const data = await res.json();
-      return data.cities || [];
-    } catch (error) {
-      console.error('Error searching cities:', error);
-      return [];
-    }
-  }, []);
-
-  // City select handler
-  const handleCitySelect = useCallback((city: CityData) => {
-    // Could zoom map to city location here
-    console.log('Selected city:', city);
-  }, []);
+  // Show map only when a country is selected
+  const showCountryMap = selectedCountry !== null;
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <Header
-        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-        onSearch={(query) => {
-          setFilters({
-            ...filters,
-            city: { query, results: [], selected: undefined },
-          });
-        }}
-      />
+      <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
 
       {/* Sidebar with Filters */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)}>
@@ -145,19 +241,92 @@ export default function HomePage() {
           filters={filters}
           onChange={setFilters}
           countries={countries}
-          onCitySearch={handleCitySearch}
-          onCitySelect={handleCitySelect}
         />
       </Sidebar>
 
       {/* Main Content */}
       <main className="pt-16 lg:pl-72">
         <div className="p-4 lg:p-6 space-y-6">
-          {/* Filter Summary */}
-          <div className="flex items-center gap-2 text-sm text-text-muted">
-            <span>Showing:</span>
-            <span className="text-accent font-medium">{getFilterSummary()}</span>
+          {/* Country Search/Filter - Prominent Position */}
+          <div className="glass-card p-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Search className="h-5 w-5 text-accent" />
+                <div>
+                  <h2 className="text-lg font-semibold text-text">Explore Climate Data</h2>
+                  <p className="text-sm text-text-muted">
+                    {selectedCountry
+                      ? `Showing data for ${selectedCountry}`
+                      : 'Select a country from the sidebar to see detailed information'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Geolocation status */}
+              {!selectedCountry && (
+                <div className="flex items-center gap-2 text-sm">
+                  {geolocation.loading ? (
+                    <span className="text-text-muted">Detecting location...</span>
+                  ) : geolocation.error ? (
+                    <span className="flex items-center gap-1 text-yellow-500">
+                      <AlertCircle className="h-4 w-4" />
+                      Using default location (Brazil)
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-accent">
+                      <Navigation className="h-4 w-4" />
+                      {geolocation.city}, {geolocation.country}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Main Content Grid - Changes based on country selection */}
+          <div className={`grid gap-6 ${showCountryMap ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
+            {/* Left Column: Weather Cards */}
+            <div className="space-y-6 order-2 lg:order-1">
+              {/* Current Weather Card */}
+              <WeatherCard
+                data={currentWeather}
+                isLoading={weatherLoading}
+              />
+
+              {/* 3-Day Forecast Card */}
+              <ForecastCard
+                forecast={forecast}
+                isLoading={weatherLoading}
+              />
+            </div>
+
+            {/* Right Column: Country Map (only when country selected) */}
+            {showCountryMap && (
+              <div className="order-1 lg:order-2">
+                <div className="glass-card p-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Globe className="h-5 w-5 text-accent" />
+                    <span className="text-lg font-semibold text-text">{selectedCountry}</span>
+                  </div>
+                  <CountryMap
+                    selectedCountry={selectedCountry}
+                    className="h-[300px] lg:h-[400px]"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Historical Comparison - Below weather cards */}
+          {(selectedCountry || historicalData || extremesData) && (
+            <HistoricalComparison
+              country={selectedCountry || 'Global'}
+              currentTemp={currentWeather?.current.temperature}
+              historicalData={historicalData}
+              extremesData={extremesData}
+              isLoading={historicalLoading}
+            />
+          )}
 
           {/* Metrics Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -171,7 +340,7 @@ export default function HomePage() {
               title="Time Period"
               value={globalStats ? `${globalStats.min_year}-${globalStats.max_year}` : '—'}
               subtitle="272 years of data"
-              icon={TrendingUp}
+              icon={Database}
             />
             <MetricsCard
               title="Countries"
@@ -187,36 +356,20 @@ export default function HomePage() {
             />
           </div>
 
-          {/* Map Section */}
-          <div className="glass-card p-4">
-            <h2 className="text-lg font-semibold text-text mb-4 flex items-center gap-2">
-              <Thermometer className="h-5 w-5 text-accent" />
-              Temperature Map
-            </h2>
-            <ClimateMap
-              markers={mapMarkers}
-              className="h-[400px] lg:h-[500px]"
-              onMarkerClick={(marker) => console.log('Clicked:', marker)}
-            />
-          </div>
-
           {/* Charts Section */}
           <div className="grid lg:grid-cols-2 gap-6">
-            {/* Temperature Over Time */}
             <TemperatureChart
               data={temperatureData}
               title="Global Temperature Trend"
               showUncertainty={false}
             />
-
-            {/* Decade Averages */}
             <DecadeChart
               data={decadeData}
               title="Average Temperature by Decade"
             />
           </div>
 
-          {/* Warming Trend Summary */}
+          {/* Climate Insights */}
           {decadeData.length > 0 && (
             <div className="glass-card p-6">
               <h2 className="text-lg font-semibold text-text mb-4">Climate Insights</h2>

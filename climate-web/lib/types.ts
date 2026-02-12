@@ -106,27 +106,20 @@ export interface YearFilter {
 }
 
 export interface MonthFilter {
-  type: 'single' | 'multiple' | 'season';
+  type: 'single' | 'multiple';
   single?: number;
   multiple?: number[];
-  season?: 'spring' | 'summer' | 'fall' | 'winter';
 }
 
 export interface CountryFilter {
   countries: string[];
 }
 
-export interface CitySearch {
-  query: string;
-  results: CityData[];
-  selected?: CityData;
-}
 
 export interface Filters {
   year: YearFilter;
   month: MonthFilter;
   country: CountryFilter;
-  city: CitySearch;
 }
 
 // Map Types
@@ -164,3 +157,87 @@ export const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
 ] as const;
+
+// Weather API Types
+export interface CurrentWeather {
+  country: string;
+  capital: string;
+  coordinates: {
+    lat: number;
+    lon: number;
+  };
+  current: {
+    temperature: number;
+    feels_like: number;
+    humidity: number;
+    weather_code: number;
+    weather_description: string;
+    weather_icon: string;
+    wind_speed: number;
+    wind_direction: string;
+  };
+  forecast: {
+    max_temp: number;
+    min_temp: number;
+    precipitation_probability: number;
+  };
+}
+
+export interface ForecastDay {
+  date: string;
+  dayName: string;
+  temp_max: number;
+  temp_min: number;
+  weather_code: number;
+  weather_description: string;
+  weather_icon: string;
+  precipitation_probability: number;
+}
+
+export interface ForecastResponse {
+  coordinates: {
+    lat: number;
+    lon: number;
+  };
+  forecast: ForecastDay[];
+}
+
+// Historical Data Types
+export interface HistoricalData {
+  country: string;
+  year: number;
+  avg_temperature: number | null;
+  data_points?: number;
+  comparison: {
+    years_ago: number;
+    data_available: boolean;
+    note?: string;
+  };
+}
+
+export interface ExtremesData {
+  country: string;
+  month: number;
+  month_name: string;
+  extremes: {
+    max_temperature: number | null;
+    max_recorded_year: number | null;
+    min_temperature: number | null;
+    min_recorded_year: number | null;
+  };
+}
+
+// Geolocation Types
+export interface Coordinates {
+  lat: number;
+  lon: number;
+}
+
+export interface GeolocationState {
+  coordinates: Coordinates | null;
+  city: string | null;
+  country: string | null;
+  loading: boolean;
+  error: string | null;
+  permissionStatus: 'granted' | 'denied' | 'prompt' | 'unknown';
+}

@@ -62,8 +62,6 @@ export function parseMonthFilter(filter: MonthFilter): number[] {
       return [filter.single!];
     case 'multiple':
       return filter.multiple!;
-    case 'season':
-      return getMonthsFromSeason(filter.season!);
     default:
       return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import type { Filters, YearFilter, MonthFilter, CountryFilter, CitySearch, CityData } from '@/lib/types';
+import type { Filters, YearFilter, MonthFilter, CountryFilter } from '@/lib/types';
 import { DEFAULT_FILTERS } from '@/components/filters/FilterPanel';
 
 export function useFilters(initialFilters?: Partial<Filters>) {
@@ -24,28 +24,6 @@ export function useFilters(initialFilters?: Partial<Filters>) {
 
   const updateCountry = useCallback((country: CountryFilter) => {
     setFilters((prev) => ({ ...prev, country }));
-  }, []);
-
-  const updateCity = useCallback((city: CitySearch) => {
-    setFilters((prev) => ({ ...prev, city }));
-  }, []);
-
-  const selectCity = useCallback((city: CityData) => {
-    setFilters((prev) => ({
-      ...prev,
-      city: {
-        query: city.city,
-        results: [],
-        selected: city,
-      },
-    }));
-  }, []);
-
-  const clearCity = useCallback(() => {
-    setFilters((prev) => ({
-      ...prev,
-      city: { query: '', results: [], selected: undefined },
-    }));
   }, []);
 
   const resetFilters = useCallback(() => {
@@ -74,11 +52,6 @@ export function useFilters(initialFilters?: Partial<Filters>) {
       parts.push('Global');
     }
 
-    // City summary
-    if (filters.city.selected) {
-      parts.push(filters.city.selected.city);
-    }
-
     return parts.join(' | ');
   }, [filters]);
 
@@ -89,9 +62,6 @@ export function useFilters(initialFilters?: Partial<Filters>) {
     updateYear,
     updateMonth,
     updateCountry,
-    updateCity,
-    selectCity,
-    clearCity,
     resetFilters,
     getFilterSummary,
   };
